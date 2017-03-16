@@ -1,0 +1,37 @@
+{% extends "bootstrap/base.html" %}
+
+{% block title %}
+FPCS系统微信端
+{% endblock %}
+
+{% block content %}
+<div class="container">
+<div class="page-header">
+<h1>FPCS系统微信端查询报表</h1>
+
+<small class="text-warning">Tps:在表格中向左滑动可查看更多内容哟!</small>
+</div>
+    <div class="table-responsive">
+    <table class="table table-bordered table-striped">
+    <tr>
+
+    {% for k in ds[0].keys() %}
+            <th class="info">
+        {{ k }}
+            </th>
+    {% endfor %}
+
+</tr>
+    {% for d in ds %}
+        <tr>
+        {% for row in d.values() %}
+
+        <td>{{ row}}</td>
+
+        {% endfor %}
+        </tr>
+    {% endfor %}
+    </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "bootstrap/base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% import "bootstrap/utils.html" as ut %}
+{% block title %}FPCS系统微信服务器配置{% endblock %}
+{% block content %}
+<div class="container">
+<div class="page-header">
+    <h1>FPCS系统微信服务器设置</h1>
+    <hr>
+</div>
+{{ ut.flashed_messages() }}
+{{ form.hidden_tag() }}
+{{ wtf.quick_form(form) }}
+
+</div>
+{% endblock %}

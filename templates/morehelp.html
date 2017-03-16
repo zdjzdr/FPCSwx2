@@ -1,0 +1,29 @@
+{% extends "bootstrap/base.html" %}
+
+{% block title %}
+FPCS系统微信端
+{% endblock %}
+
+{% block content %}
+<div class="container">
+<div class="page-header">
+<h1>FPCS系统微信端命令手册</h1>
+<h3>[2017-3-1]</h3>
+<small class="text-warning">Tps:在表格中向左滑动可查看更多内容哟!</small>
+</div>
+    <div class="table-responsive">
+    <table class="table table-bordered table-striped">
+    <th class="info">命令</th>
+    <th class="info">命令名称</th>
+    <th class="info">示例</th>
+    {% for row in conn %}
+    <tr>
+        <td>{{ row['命令'] }}</td>
+        <td>{{ row['命令名称']}}</td>
+        <td>{{ row['示例'] }}</td>
+    </tr>
+    {% endfor %}
+    </table>
+    </div>
+</div>
+{% endblock %}
