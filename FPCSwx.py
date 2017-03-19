@@ -5,7 +5,7 @@ from wechatpy.enterprise import WeChatCrypto
 from wechatpy.exceptions import InvalidSignatureException
 from wechatpy.enterprise.exceptions import InvalidCorpIdException
 from wechatpy.enterprise import create_reply, parse_message
-from FPCSdb import wx_tx, pd_msg, db_super_query
+from FPCSdb import wx_tx, pd_msg, db_super_query, events_upimage
 from flask_bootstrap import Bootstrap
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, PasswordField
@@ -41,22 +41,37 @@ def rep(c, r, s, t, n):
     try:
         # 解密消息
         msg_xml = c.decrypt_message(r, s, t, n)
+        print("msg_xml:", msg_xml)
     except (InvalidSignatureException, InvalidCorpIdException):
         abort(403)
     # XML---> Dic
     msg = parse_message(msg_xml)
-    # 回复消息
-    print('msg.content:', msg.content)
-    reps = pd_msg(msg.type, msg.content)
-    # 如果返回的是一个列表用图文回复
-    if isinstance(reps, list):
-        articles = [{'title': '>>>点击查看更多内容>>>',
-                    'description': '当前查询的内容过多，请点击下面的【查看原文】...',
-                    'url': request.url_root + 'morerep?content=' + msg.content
-                  }]
-        reply = create_reply(articles, msg)
-    else:
-        reply = create_reply(reps, msg)
+    print("解密后的msg:", msg)
+    reply = ""
+    if msg.type == 'text':
+        # 回复消息
+        print('msg.content:', msg.content)
+        reps = pd_msg(msg.type, msg.content)
+        # 如果返回的是一个列表用图文回复
+        if isinstance(reps, list):
+            articles = [{'title': '>>>点击查看更多内容>>>',
+                         'description': '当前查询的内容过多，请点击下面的【查看原文】...',
+                         'url': request.url_root + 'morerep?content=' + msg.content
+                         }]
+            reply = create_reply(articles, msg)
+        else:
+            reply = create_reply(reps, msg)
+            # 事件消息处理
+    elif msg.type == 'event':
+        # 图片上传事件
+        reply = create_reply(events_upimage(msg), msg)
+    elif msg.type == 'image':
+        if msg.media_id:
+            response = wechatmedia.download(msg.media_id)
+            with open('test.jpg', 'wb') as f:
+                for chunk in response.iter_content(2048):
+                    f.write(chunk)
+                print("文件保存成功！")
     # 加密消息
     return c.encrypt_message(reply, n, t)
 
@@ -142,6 +157,6 @@ def wx():
 
 
 if __name__ == '__main__':
-    t = threading.Thread(target=wx_tx)
-    t.start()
+    # t = threading.Thread(target=wx_tx)
+    # t.start()
     app.run(debug=True)

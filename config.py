@@ -3,6 +3,7 @@
 import os
 from mod_config import get_config
 import _mssql
+from wechatpy.events import PicPhotoOrAlbumEvent
 from wechatpy.enterprise import WeChatClient
 from wechatpy.enterprise.exceptions import InvalidCorpIdException
 from wechatpy.enterprise.client.api import WeChatMessage
@@ -26,6 +27,7 @@ except _mssql.MssqlDatabaseException:
 
 try:
     client = WeChatClient(wxset['CorpId'], wxset['Secret'])
+    print("access_token", client.access_token)
 except InvalidCorpIdException as e:
     print("wx client出错: %s" % e)
 

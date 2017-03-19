@@ -101,9 +101,6 @@ def pd_msg(tp, content):
                     s = ls
                 else:
                     s = wxset['customstr']+'\n↓↓↓查询结果如下↓↓↓ \n' + ls
-    # 用户发送的图片消息
-    elif tp == 'image':
-        pass
     else:
         s = '请输入正确的文本信息.'
     return s
@@ -184,3 +181,16 @@ def ls_to_str(ls, d=1):
 
     else:
         return ls
+
+
+# 上传图片事件
+def events_upimage(msg):
+    rp = ''
+    try:
+
+        if msg.event == 'pic_photo_or_album' and msg.key == 'FPCS_YeWu_Upimg':
+            print("图片数量：", msg.count)
+            rp = "图片上传成功啦，共有 " + str(msg.count) + "张图片。"
+    except:
+        rp = "图片上传错误！"
+    return rp
