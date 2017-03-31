@@ -1,10 +1,11 @@
-from flask import Flask, request, abort, render_template, flash, url_for, redirect
+from flask import Flask, request, abort, render_template, flash
 from mod_config import set_config
 from config import *
 from wechatpy.enterprise import WeChatCrypto
 from wechatpy.exceptions import InvalidSignatureException
 from wechatpy.enterprise.exceptions import InvalidCorpIdException
 from wechatpy.enterprise import create_reply, parse_message
+from wechatpy.enterprise.replies import TextReply
 from FPCSdb import wx_tx, pd_msg, db_super_query, events_upimage
 from flask_bootstrap import Bootstrap
 from flask_wtf import FlaskForm
@@ -38,10 +39,11 @@ class setForm(FlaskForm):
 # wx消息(回复)处理函数
 # (c:加解密函数 r:post过来的内容 s:sinnature t:timesatmp n: nonce)
 def rep(c, r, s, t, n):
+    msg_xml = ''
     try:
         # 解密消息
         msg_xml = c.decrypt_message(r, s, t, n)
-        print("msg_xml:", msg_xml)
+        # print("msg_xml:", msg_xml)
     except (InvalidSignatureException, InvalidCorpIdException):
         abort(403)
     # XML---> Dic
@@ -50,6 +52,7 @@ def rep(c, r, s, t, n):
     reply = ""
     if msg.type == 'text':
         # 回复消息
+        wechatmessage.send_text(msg.agent, msg.source, '第一条消息')
         print('msg.content:', msg.content)
         reps = pd_msg(msg.type, msg.content)
         # 如果返回的是一个列表用图文回复
@@ -61,15 +64,26 @@ def rep(c, r, s, t, n):
             reply = create_reply(articles, msg)
         else:
             reply = create_reply(reps, msg)
-            # 事件消息处理
+    # 事件消息处理
     elif msg.type == 'event':
         # 图片上传事件
+        if msg.event == 'pic_photo_or_album' and msg.key == 'FPCS_YeWu_Upimg':
+            ls = []
+            print("图片数量：", msg.count)
+            if msg.count > 0:
+                wechatmessage.send_text(msg.agent, msg.source, '请输入图片描述：')
+                ls.append(msg.content)
+                print('ls:', ls)
         reply = create_reply(events_upimage(msg), msg)
     elif msg.type == 'image':
         if msg.media_id:
+            L = {}
             response = wechatmedia.download(msg.media_id)
-            with open('test.jpg', 'wb') as f:
-                for chunk in response.iter_content(2048):
+            # 获取文件名称
+            n = response.headers['Content-disposition'].split('=')[1].replace('"', '')
+            # 保存文件到本地电脑
+            with open(pic_path() + '\\' + n, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=1024):
                     f.write(chunk)
                 print("文件保存成功！")
     # 加密消息
@@ -152,8 +166,66 @@ def wx():
             abort(403)
         return echo_str
     else:
+        # msg_xml = ''
+        # try:
+        #     # 解密消息
+        #     msg_xml = crypto.decrypt_message(request.data, sinnature, timesatmp, nonce)
+        #     # print("msg_xml:", msg_xml)
+        # except (InvalidSignatureException, InvalidCorpIdException):
+        #     abort(403)
+        # # XML---> Dic
+        # msg = parse_message(msg_xml)
+        # print("解密后的msg:", msg)
 
         return rep(crypto, request.data, sinnature, timesatmp, nonce)
+
+
+@app.route('/wechat_cus', methods=['GET', 'POST'])
+def wx_cus():
+    sinnature = request.args.get('msg_signature', '')
+    timesatmp = request.args.get('timestamp', '')
+    nonce = request.args.get('nonce', '')
+    crypto = WeChatCrypto(wxset['TOKEN'], wxset['EncodingAESKey'], wxset['CorpId'])
+    if request.method == 'GET':
+        echo_str = request.args.get('echostr', '')
+        try:
+            # 验证URL有效性
+            echo_str = crypto.check_signature(sinnature, timesatmp, nonce, echo_str)
+        except InvalidSignatureException:
+            abort(403)
+        return echo_str
+        # print('FPCS系统为您服务 %s', wechatcustom.get_accounts())
+    else:
+        msg_xml = crypto.decrypt_message(request.data, sinnature, timesatmp, nonce)
+        msg = parse_message(msg_xml)
+        print(msg)
+        return "收到"
+
+
+def txt_reply(context, c, s, t, n, r):
+    msg_xml = ''
+    try:
+        # 解密消息
+        msg_xml = c.decrypt_message(r, s, t, n)
+        print("msg_xml:", msg_xml)
+    except (InvalidSignatureException, InvalidCorpIdException):
+        abort(403)
+    # XML---> Dic
+    msg = parse_message(msg_xml)
+    if msg.content == '?':
+        ls = []
+        context = ['正在查询。。。', '这是帮助语句哟！']
+        for l in context:
+            repy = TextReply(content=l, message=msg)
+            e_xml = c.encrypt_message(repy, n, t)
+            ls.append(e_xml)
+            print(ls)
+        return ls
+    else:
+        context = '请输入正确的口令！'
+        repy = TextReply(content=context, message=msg)
+        return c.encrypt_message(repy, n, t)
+
 
 
 if __name__ == '__main__':

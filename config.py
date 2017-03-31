@@ -1,22 +1,24 @@
 # coding:utf-8
 # designer:Zhoulang
 import os
+import time
 from mod_config import get_config
 import _mssql
-from wechatpy.events import PicPhotoOrAlbumEvent
 from wechatpy.enterprise import WeChatClient
 from wechatpy.enterprise.exceptions import InvalidCorpIdException
 from wechatpy.enterprise.client.api import WeChatMessage
 from wechatpy.enterprise.client.api import WeChatMedia
+from wechatpy.client.api import WeChatCustomService
 
 wxset = {'host': get_config("wx", "host"), 'database': get_config("wx", "database"), 'user': get_config("wx", "user"),
          'pwd': get_config("wx", "pwd"), 'port': get_config("wx", "port"), 'customstr': get_config("wx", "customstr"),
          'Secret': get_config("wx", "Secret"), 'TOKEN': get_config("wx", "TOKEN"),
          'EncodingAESKey': get_config("wx", "EncodingAESKey"), 'CorpId': get_config("wx", "CorpId"),
          'agent_id': get_config("wx", "agent_id"), 'tm': get_config("wx", "tm"),
-         'msg_limit': get_config("wx", "msg_limit")}
-
+         'msg_limit': get_config("wx", "msg_limit"), 'nfs_path': get_config("wx", "nfs_path")}
+cus_Secret = 'YYFeJ3uAXBNmr3twMtEen9b-QY4Zc5gZae2P19mCHXkUQVVyPMLZiWeLq0zAOBIB'
 df_p = os.path.dirname(os.path.realpath(__file__)) + '\\config.py'
+ftime = "%Y-%m-%d %H:%M:%S"
 root_url = ''
 # 数据库连接
 try:
@@ -27,7 +29,9 @@ except _mssql.MssqlDatabaseException:
 
 try:
     client = WeChatClient(wxset['CorpId'], wxset['Secret'])
-    print("access_token", client.access_token)
+    cus_client = WeChatClient(wxset['CorpId'], cus_Secret)
+    print("access_token: ", client.access_token)
+    print("cus_access_token: ", cus_client.access_token)
 except InvalidCorpIdException as e:
     print("wx client出错: %s" % e)
 
@@ -39,7 +43,12 @@ except InvalidCorpIdException as e:
 try:
     wechatmedia = WeChatMedia(client)
 except InvalidCorpIdException as e:
-    print("wx media出错: %s" % e)
+	print("wechatmedia出错: %s" % e)
+
+try:
+	wechatcustom = WeChatCustomService(cus_client)
+except InvalidCorpIdException as e:
+	print("WeChatCustomService出错: %s" % e)
 
 dic_sql = {
     # 更新提醒记录状态语句
@@ -118,4 +127,16 @@ w.toUser = t.[姓名]""",
 
 }
 
-ftime = "%Y-%m-%d %H:%M:%S"
+
+# 微信图片存放路径处理
+def pic_path():
+	nfs_pic_path = ''
+	try:
+		conn.execute_query("SELECT  [RtId] FROM [dbo].[ES_v_Tmp] where RtNo = 'wxtk'")
+		rtid = [r['RtId'] for r in conn]
+		nfs_pic_path = os.path.join(wxset['nfs_path'], wxset['database'] + '_' + rtid[0], time.strftime("%Y%m"))
+		if not os.path.isdir(nfs_pic_path):
+			os.makedirs(nfs_pic_path)
+	except ValueError:
+		print("图片存放路径处理失败,请检查数据库名称和图库表名是否为:wxtk")
+	return nfs_pic_path

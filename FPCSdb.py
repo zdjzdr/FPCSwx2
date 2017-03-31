@@ -185,12 +185,9 @@ def ls_to_str(ls, d=1):
 
 # 上传图片事件
 def events_upimage(msg):
-    rp = ''
-    try:
-
-        if msg.event == 'pic_photo_or_album' and msg.key == 'FPCS_YeWu_Upimg':
-            print("图片数量：", msg.count)
-            rp = "图片上传成功啦，共有 " + str(msg.count) + "张图片。"
-    except:
-        rp = "图片上传错误！"
-    return rp
+    rp = []
+    wechatmessage.send_text(msg.agent, msg.source, '请上传图片：')
+    if msg.event == 'pic_photo_or_album' and msg.key == 'FPCS_YeWu_Upimg':
+        print("图片数量：", msg.count)
+        wechatmessage.send_text(msg.agent, msg.source, '请输入图片描述：')
+        rp.append(msg.content)

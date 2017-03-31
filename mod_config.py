@@ -25,7 +25,8 @@ def get_config(section, key):
             'CorpId': '',
             'agent_id': 0,
             'tm': 60,
-            'msg_limit': 1
+	        'msg_limit': 1,
+	        'nfs_path': 'E:\ES附件'
         }
         config['wx'] = s
         with open(path, 'w', encoding='utf-8') as f:

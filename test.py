@@ -1,11 +1,12 @@
-ds = [[('产品名称', '轴承壳'), ('产品图号', '11517329152'), ('产品型号', 'TCR18'), ('产品材质', 'GGG40')], [('产品名称', '轴承体毛坯'), ('产品图号', '11517689064'), ('产品型号', 'TCR18'), ('产品材质', 'GGG40')]]
-ls=[]
-import collections
-for d in ds:
-	dic1=collections.OrderedDict()
-	for d2 in d:
-		dic1[d2[0]] = d2[1]
-
-	ls.append(dic1)
-
-print(ls[0]['产品型号'])
+def send_message(data, signature, timesatmp, nonce):
+	# ①解密消息
+	msg_xml = crypto.decrypt_message(data, signature, timesatmp, nonce)
+	# ②xml2Dict
+	msg = parse_message(msg_xml)
+	# ③调用消息处理函数,返回待发送的数据
+	reps = pd_msg(msg.type, msg.content)
+	# ④根据返回的数据类型决定发送的数据格式（文本消息或者图文消息）
+	# ⑤调用回复函数
+	reply = create_reply('hhah', msg)
+	# ⑥待回复的消息加密发送
+	return crypto.encrypt_message(reply, nonce, timesatmp)
